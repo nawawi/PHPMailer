@@ -960,6 +960,32 @@ EOT;
     }
 
     /**
+     * Send an HTML message specifiying the DSN notifications we expect.
+     */
+    public function testDsn()
+    {
+        $this->Mail->isHTML(true);
+        $this->Mail->Subject .= ': HTML only';
+
+        $this->Mail->Body = <<<'EOT'
+<html>
+    <head>
+        <title>HTML email test</title>
+    </head>
+    <body>
+        <p>PHPMailer</p>
+    </body>
+</html>
+EOT;
+        $this->buildBody();
+        $this->Mail->dsn = 'SUCCESS,FAILURE';
+        $this->assertTrue($this->Mail->send(), $this->Mail->ErrorInfo);
+        //Sends the same mail, but sets the DSN notification to NEVER
+        $this->Mail->dsn = 'NEVER';
+        $this->assertTrue($this->Mail->send(), $this->Mail->ErrorInfo);
+    }
+
+    /**
      * createBody test of switch case
      */
     public function testCreateBody()
@@ -1594,6 +1620,18 @@ EOT;
     }
 
     /**
+     * Test addressing.
+     */
+    public function testAddressing2()
+    {
+        $this->buildBody();
+        $this->Mail->setFrom('bob@example.com', '"Bob\'s Burgers" (Bob\'s "Burgers")', true);
+        $this->Mail->isSMTP();
+        $this->Mail->Subject .= ': quotes in from name';
+        $this->assertTrue($this->Mail->send(), 'send failed');
+    }
+
+    /**
      * Test RFC822 address splitting.
      */
     public function testAddressSplitting()
@@ -1791,6 +1829,50 @@ EOT;
         $this->Mail->encodeString('hello', 'asdfghjkl');
         $this->assertNotEmpty($this->Mail->ErrorInfo, 'Invalid encoding not detected');
         $this->assertRegExp('/' . base64_encode('hello') . '/', $this->Mail->encodeString('hello'));
+    }
+
+    /**
+     * Expect exceptions on bad encoding
+     *
+     * @expectedException PHPMailer\PHPMailer\Exception
+     */
+    public function testAddAttachmentEncodingException()
+    {
+        $mail = new PHPMailer(true);
+        $mail->addAttachment(__FILE__, 'test.txt', 'invalidencoding');
+    }
+
+    /**
+     * Expect exceptions on bad encoding
+     *
+     * @expectedException PHPMailer\PHPMailer\Exception
+     */
+    public function testStringAttachmentEncodingException()
+    {
+        $mail = new PHPMailer(true);
+        $mail->addStringAttachment('hello', 'test.txt', 'invalidencoding');
+    }
+
+    /**
+     * Expect exceptions on bad encoding
+     *
+     * @expectedException PHPMailer\PHPMailer\Exception
+     */
+    public function testEmbeddedImageEncodingException()
+    {
+        $mail = new PHPMailer(true);
+        $mail->addEmbeddedImage(__FILE__, 'cid', 'test.png', 'invalidencoding');
+    }
+
+    /**
+     * Expect exceptions on bad encoding
+     *
+     * @expectedException PHPMailer\PHPMailer\Exception
+     */
+    public function testStringEmbeddedImageEncodingException()
+    {
+        $mail = new PHPMailer(true);
+        $mail->addStringEmbeddedImage('hello', 'cid', 'test.png', 'invalidencoding');
     }
 
     /**
@@ -2006,7 +2088,7 @@ EOT;
         $subject = 'example';
 
         $headerLines = "From:$from\r\nTo:$to\r\nDate:$date\r\n";
-        $copyHeaderFields = "\tz=From:$from\r\n\t|To:$to\r\n\t|Date:$date\r\n\t|Subject:=20$subject;\r\n";
+        $copyHeaderFields = " z=From:$from\r\n |To:$to\r\n |Date:$date\r\n |Subject:=20$subject;\r\n";
 
         $this->Mail->DKIM_copyHeaderFields = true;
         $this->assertContains(
