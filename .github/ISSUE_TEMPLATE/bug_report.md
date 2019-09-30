@@ -1,3 +1,12 @@
+---
+name: Bug report
+about: If you've found a bug in PHPMailer, this is the right place to report it
+title: ''
+labels: ''
+assignees: ''
+
+---
+
 Please check these things before submitting your issue:
 
 - [ ] *Read the error message* you're seeing - it often tells you what is wrong, and may contain useful links & instructions

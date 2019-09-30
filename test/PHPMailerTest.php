@@ -79,7 +79,7 @@ final class PHPMailerTest extends TestCase
         $this->Mail->Debugoutput = ['PHPMailer\Test\DebugLogTestListener', 'debugLog'];
         $this->Mail->Priority = 3;
         $this->Mail->Encoding = '8bit';
-        $this->Mail->CharSet = 'iso-8859-1';
+        $this->Mail->CharSet = PHPMailer::CHARSET_ISO88591;
         if (array_key_exists('mail_from', $_REQUEST)) {
             $this->Mail->From = $_REQUEST['mail_from'];
         } else {
@@ -221,10 +221,10 @@ final class PHPMailerTest extends TestCase
         if (3 != $this->Mail->Priority) {
             $this->addChange('Priority', $this->Mail->Priority);
         }
-        if ('8bit' != $this->Mail->Encoding) {
+        if (PHPMailer::ENCODING_8BIT != $this->Mail->Encoding) {
             $this->addChange('Encoding', $this->Mail->Encoding);
         }
-        if ('iso-8859-1' != $this->Mail->CharSet) {
+        if (PHPMailer::CHARSET_ISO88591 != $this->Mail->CharSet) {
             $this->addChange('CharSet', $this->Mail->CharSet);
         }
         if ('' != $this->Mail->Sender) {
@@ -312,7 +312,7 @@ final class PHPMailerTest extends TestCase
         $this->Mail->Host = 'hostname';
         $this->Mail->Port = 587;
         $this->Mail->SMTPAuth = true;
-        $this->Mail->SMTPSecure = 'tls';
+        $this->Mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $this->Mail->AuthType = 'CRAM-MD5';
         $this->Mail->Username = 'username';
         $this->Mail->Password = 'password';
@@ -877,8 +877,10 @@ final class PHPMailerTest extends TestCase
         $bencodenofold = str_repeat('é', 10);
         //This should select Q-encoding automatically and should not fold
         $qencodenofold = str_repeat('e', 9) . 'é';
-        //This should not encode, but just fold automatically
-        $justfold = str_repeat('e', PHPMailer::STD_LINE_LENGTH + 10);
+        //This should Q-encode as ASCII and fold (previously, this did not encode)
+        $longheader = str_repeat('e', PHPMailer::STD_LINE_LENGTH + 10);
+        //This should Q-encode as UTF-8 and fold
+        $longutf8 = str_repeat('é', PHPMailer::STD_LINE_LENGTH + 10);
         //This should not change
         $noencode = 'eeeeeeeeee';
         $this->Mail->isMail();
@@ -896,8 +898,12 @@ final class PHPMailerTest extends TestCase
             ' =?UTF-8?Q?eeeeeeeeeeeeeeeeeeeeeeeeee=C3=A9?=';
         $bencodenofoldres = '=?UTF-8?B?w6nDqcOpw6nDqcOpw6nDqcOpw6k=?=';
         $qencodenofoldres = '=?UTF-8?Q?eeeeeeeee=C3=A9?=';
-        $justfoldres = 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' .
-            PHPMailer::getLE() . ' eeeeeeeeee';
+        $longheaderres = '=?us-ascii?Q?eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee?=' .
+            PHPMailer::getLE() . ' =?us-ascii?Q?eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee?=';
+        $longutf8res = '=?UTF-8?B?w6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6k=?=' .
+             PHPMailer::getLE() . ' =?UTF-8?B?w6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6k=?=' .
+             PHPMailer::getLE() . ' =?UTF-8?B?w6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6k=?=' .
+             PHPMailer::getLE() . ' =?UTF-8?B?w6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqQ==?=';
         $noencoderes = 'eeeeeeeeee';
         $this->assertEquals(
             $bencoderes,
@@ -920,9 +926,14 @@ final class PHPMailerTest extends TestCase
             'Q-encoded header value incorrect'
         );
         $this->assertEquals(
-            $justfoldres,
-            $this->Mail->encodeHeader($justfold),
-            'Folded header value incorrect'
+            $longheaderres,
+            $this->Mail->encodeHeader($longheader),
+            'Long header value incorrect'
+        );
+        $this->assertEquals(
+            $longutf8res,
+            $this->Mail->encodeHeader($longutf8),
+            'Long UTF-8 header value incorrect'
         );
         $this->assertEquals(
             $noencoderes,
@@ -1023,7 +1034,7 @@ EOT;
     {
         $this->Mail->isHTML(true);
         $this->Mail->Subject .= ': ISO-8859-1 HTML';
-        $this->Mail->CharSet = 'iso-8859-1';
+        $this->Mail->CharSet = PHPMailer::CHARSET_ISO88591;
 
         //This file is in ISO-8859-1 charset
         //Needs to be external because this file is in UTF-8
@@ -1135,7 +1146,7 @@ EOT;
     public function testMsgHTML()
     {
         $message = file_get_contents(realpath($this->INCLUDE_DIR . '/examples/contentsutf8.html'));
-        $this->Mail->CharSet = 'utf-8';
+        $this->Mail->CharSet = PHPMailer::CHARSET_UTF8;
         $this->Mail->Body = '';
         $this->Mail->AltBody = '';
         //Uses internal HTML to text conversion
@@ -1795,7 +1806,7 @@ EOT;
      */
     public function testEncodings()
     {
-        $this->Mail->CharSet = 'iso-8859-1';
+        $this->Mail->CharSet = PHPMailer::CHARSET_ISO88591;
         $this->assertEquals(
             '=A1Hola!_Se=F1or!',
             $this->Mail->encodeQ("\xa1Hola! Se\xf1or!", 'text'),
@@ -2059,6 +2070,19 @@ EOT;
             $postheaders,
             $this->Mail->DKIM_HeaderC($preheaders),
             'DKIM header canonicalization incorrect'
+        );
+        //Check that long folded lines with runs of spaces are canonicalised properly
+        $preheaders = 'Long-Header-1: <https://example.com/somescript.php?' .
+            "id=1234567890&name=Abcdefghijklmnopquestuvwxyz&hash=\r\n abc1234" .
+            "\r\nLong-Header-2: This  is  a  long  header  value  that  contains  runs  of  spaces and trailing    " .
+            "\r\n and   is   folded   onto   2   lines";
+        $postheaders = 'long-header-1:<https://example.com/somescript.php?id=1234567890&' .
+            "name=Abcdefghijklmnopquestuvwxyz&hash=abc1234\r\nlong-header-2:This is a long" .
+            ' header value that contains runs of spaces and trailing and is folded onto 2 lines';
+        $this->assertEquals(
+            $postheaders,
+            $this->Mail->DKIM_HeaderC($preheaders),
+            'DKIM header canonicalization of long lines incorrect'
         );
     }
 
@@ -2419,7 +2443,7 @@ EOT;
      */
     public function testConfirmReadingTo()
     {
-        $this->Mail->CharSet = 'utf-8';
+        $this->Mail->CharSet = PHPMailer::CHARSET_UTF8;
         $this->buildBody();
 
         $this->Mail->ConfirmReadingTo = 'test@example..com';  //Invalid address
@@ -2509,7 +2533,7 @@ EOT;
         $this->Mail->clearAllRecipients();
         $this->Mail->clearReplyTos();
 
-        $this->Mail->CharSet = 'utf-8';
+        $this->Mail->CharSet = PHPMailer::CHARSET_UTF8;
 
         $this->assertTrue($this->Mail->addAddress('test@françois.ch'));
         $this->assertFalse($this->Mail->addAddress('test@françois.ch'));
@@ -2661,6 +2685,131 @@ EOT;
         $subject = $PHPMailer->setOAuth($oauth);
         $this->assertNull($subject);
         $this->assertInstanceOf(OAuth::class, $PHPMailer->getOAuth());
+    }
+
+    /**
+     * Test ICal method
+     */
+    public function testICalMethod()
+    {
+        $this->Mail->Subject .= ': ICal method';
+        $this->Mail->Body = '<h3>ICal method test.</h3>';
+        $this->Mail->AltBody = 'ICal method test.';
+        $this->Mail->Ical = 'BEGIN:VCALENDAR'
+            . "\r\nVERSION:2.0"
+            . "\r\nPRODID:-//PHPMailer//PHPMailer Calendar Plugin 1.0//EN"
+            . "\r\nMETHOD:CANCEL"
+            . "\r\nCALSCALE:GREGORIAN"
+            . "\r\nX-MICROSOFT-CALSCALE:GREGORIAN"
+            . "\r\nBEGIN:VEVENT"
+            . "\r\nUID:201909250755-42825@test"
+            . "\r\nDTSTART;20190930T080000Z"
+            . "\r\nSEQUENCE:2"
+            . "\r\nTRANSP:OPAQUE"
+            . "\r\nSTATUS:CONFIRMED"
+            . "\r\nDTEND:20190930T084500Z"
+            . "\r\nLOCATION:[London] London Eye"
+            . "\r\nSUMMARY:Test ICal method"
+            . "\r\nATTENDEE;CN=Attendee, Test;ROLE=OPT-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP="
+            . "\r\n TRUE:MAILTO:attendee-test@example.com"
+            . "\r\nCLASS:PUBLIC"
+            . "\r\nDESCRIPTION:Some plain text"
+            . "\r\nORGANIZER;CN=\"Example, Test\":MAILTO:test@example.com"
+            . "\r\nDTSTAMP:20190925T075546Z"
+            . "\r\nCREATED:20190925T075709Z"
+            . "\r\nLAST-MODIFIED:20190925T075546Z"
+            . "\r\nEND:VEVENT"
+            . "\r\nEND:VCALENDAR";
+        $this->buildBody();
+        $this->Mail->preSend();
+        $this->assertRegExp(
+            '/Content-Type: text\/calendar; method=CANCEL;/',
+            $this->Mail->getSentMIMEMessage(),
+            'Wrong ICal method in Content-Type header'
+        );
+    }
+
+    /**
+     * Test ICal missing method to use default (REQUEST)
+     */
+    public function testICalInvalidMethod()
+    {
+        $this->Mail->Subject .= ': ICal method';
+        $this->Mail->Body = '<h3>ICal method test.</h3>';
+        $this->Mail->AltBody = 'ICal method test.';
+        $this->Mail->Ical = 'BEGIN:VCALENDAR'
+            . "\r\nVERSION:2.0"
+            . "\r\nPRODID:-//PHPMailer//PHPMailer Calendar Plugin 1.0//EN"
+            . "\r\nMETHOD:INVALID"
+            . "\r\nCALSCALE:GREGORIAN"
+            . "\r\nX-MICROSOFT-CALSCALE:GREGORIAN"
+            . "\r\nBEGIN:VEVENT"
+            . "\r\nUID:201909250755-42825@test"
+            . "\r\nDTSTART;20190930T080000Z"
+            . "\r\nSEQUENCE:2"
+            . "\r\nTRANSP:OPAQUE"
+            . "\r\nSTATUS:CONFIRMED"
+            . "\r\nDTEND:20190930T084500Z"
+            . "\r\nLOCATION:[London] London Eye"
+            . "\r\nSUMMARY:Test ICal method"
+            . "\r\nATTENDEE;CN=Attendee, Test;ROLE=OPT-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP="
+            . "\r\n TRUE:MAILTO:attendee-test@example.com"
+            . "\r\nCLASS:PUBLIC"
+            . "\r\nDESCRIPTION:Some plain text"
+            . "\r\nORGANIZER;CN=\"Example, Test\":MAILTO:test@example.com"
+            . "\r\nDTSTAMP:20190925T075546Z"
+            . "\r\nCREATED:20190925T075709Z"
+            . "\r\nLAST-MODIFIED:20190925T075546Z"
+            . "\r\nEND:VEVENT"
+            . "\r\nEND:VCALENDAR";
+        $this->buildBody();
+        $this->Mail->preSend();
+        $this->assertRegExp(
+            '/Content-Type: text\/calendar; method=REQUEST;/',
+            $this->Mail->getSentMIMEMessage(),
+            'Wrong ICal method in Content-Type header'
+        );
+    }
+
+    /**
+     * Test ICal invalid method to use default (REQUEST)
+     */
+    public function testICalDefaultMethod()
+    {
+        $this->Mail->Subject .= ': ICal method';
+        $this->Mail->Body = '<h3>ICal method test.</h3>';
+        $this->Mail->AltBody = 'ICal method test.';
+        $this->Mail->Ical = 'BEGIN:VCALENDAR'
+            . "\r\nVERSION:2.0"
+            . "\r\nPRODID:-//PHPMailer//PHPMailer Calendar Plugin 1.0//EN"
+            . "\r\nCALSCALE:GREGORIAN"
+            . "\r\nX-MICROSOFT-CALSCALE:GREGORIAN"
+            . "\r\nBEGIN:VEVENT"
+            . "\r\nUID:201909250755-42825@test"
+            . "\r\nDTSTART;20190930T080000Z"
+            . "\r\nSEQUENCE:2"
+            . "\r\nTRANSP:OPAQUE"
+            . "\r\nSTATUS:CONFIRMED"
+            . "\r\nDTEND:20190930T084500Z"
+            . "\r\nLOCATION:[London] London Eye"
+            . "\r\nSUMMARY:Test ICal method"
+            . "\r\nATTENDEE;CN=Attendee, Test;ROLE=OPT-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP="
+            . "\r\n TRUE:MAILTO:attendee-test@example.com"
+            . "\r\nCLASS:PUBLIC"
+            . "\r\nDESCRIPTION:Some plain text"
+            . "\r\nORGANIZER;CN=\"Example, Test\":MAILTO:test@example.com"
+            . "\r\nDTSTAMP:20190925T075546Z"
+            . "\r\nCREATED:20190925T075709Z"
+            . "\r\nLAST-MODIFIED:20190925T075546Z"
+            . "\r\nEND:VEVENT"
+            . "\r\nEND:VCALENDAR";
+        $this->buildBody();
+        $this->Mail->preSend();
+        $this->assertRegExp(
+            '/Content-Type: text\/calendar; method=REQUEST;/',
+            $this->Mail->getSentMIMEMessage(),
+            'Wrong ICal method in Content-Type header'
+        );
     }
 }
 /*
