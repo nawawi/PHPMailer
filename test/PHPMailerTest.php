@@ -1094,7 +1094,8 @@ EOT;
         $this->Mail->CharSet = 'UTF-8';
 
         $this->Mail->Body = <<<'EOT'
-<html>
+<!DOCTYPE html>
+<html lang="en">
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <title>HTML email test</title>
@@ -1104,13 +1105,13 @@ EOT;
         <p>Russian text: Пустое тело сообщения</p>
         <p>Armenian text: Հաղորդագրությունը դատարկ է</p>
         <p>Czech text: Prázdné tělo zprávy</p>
-        Embedded Image: <img alt="phpmailer" src="cid:my-attach">
+        Embedded Image: <img alt="phpmailer" src="cid:bäck">
     </body>
 </html>
 EOT;
         $this->Mail->addEmbeddedImage(
             realpath($this->INCLUDE_DIR . '/examples/images/phpmailer.png'),
-            'my-attach',
+            'bäck',
             'phpmailer.png',
             'base64',
             'image/png'
@@ -1303,6 +1304,23 @@ EOT;
 
         $this->buildBody();
         $this->assertTrue($this->Mail->send(), $this->Mail->ErrorInfo);
+        $this->Mail->clearAttachments();
+        $this->Mail->msgHTML('<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>E-Mail Inline Image Test</title>
+  </head>
+  <body>
+    <p><img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="></p>
+  </body>
+</html>');
+        $this->Mail->preSend();
+        $this->assertContains(
+            'Content-ID: <bb229a48bee31f5d54ca12dc9bd960c6@phpmailer.0>',
+            $this->Mail->getSentMIMEMessage(),
+            'Embedded image header encoding incorrect.'
+        );
         //For code coverage
         $this->Mail->addEmbeddedImage('thisfiledoesntexist', 'xyz'); //Non-existent file
         $this->Mail->addEmbeddedImage(__FILE__, '123'); //Missing name
@@ -2071,13 +2089,13 @@ EOT;
             $this->Mail->DKIM_HeaderC($preheaders),
             'DKIM header canonicalization incorrect'
         );
-        //Check that long folded lines with runs of spaces are canonicalised properly
+        //Check that long folded lines with runs of spaces are canonicalized properly
         $preheaders = 'Long-Header-1: <https://example.com/somescript.php?' .
-            "id=1234567890&name=Abcdefghijklmnopquestuvwxyz&hash=\r\n abc1234" .
-            "\r\nLong-Header-2: This  is  a  long  header  value  that  contains  runs  of  spaces and trailing    " .
-            "\r\n and   is   folded   onto   2   lines";
+            "id=1234567890&name=Abcdefghijklmnopquestuvwxyz&hash=\r\n abc1234\r\n" .
+            "Long-Header-2: This  is  a  long  header  value  that  contains  runs  of  spaces and trailing    \r\n" .
+            ' and   is   folded   onto   2   lines';
         $postheaders = 'long-header-1:<https://example.com/somescript.php?id=1234567890&' .
-            "name=Abcdefghijklmnopquestuvwxyz&hash=abc1234\r\nlong-header-2:This is a long" .
+            "name=Abcdefghijklmnopquestuvwxyz&hash= abc1234\r\nlong-header-2:This is a long" .
             ' header value that contains runs of spaces and trailing and is folded onto 2 lines';
         $this->assertEquals(
             $postheaders,
@@ -2112,7 +2130,7 @@ EOT;
         $subject = 'example';
 
         $headerLines = "From:$from\r\nTo:$to\r\nDate:$date\r\n";
-        $copyHeaderFields = " z=From:$from\r\n |To:$to\r\n |Date:$date\r\n |Subject:=20$subject;\r\n";
+        $copyHeaderFields = " z=From:$from\r\n |To:$to\r\n |Date:$date\r\n |Subject:$subject;\r\n";
 
         $this->Mail->DKIM_copyHeaderFields = true;
         $this->assertContains(
@@ -2167,7 +2185,7 @@ EOT;
         $headerLines .= "X-AnyHeader:$anyHeader\r\nBaz:bar\r\n";
         $headerLines .= 'List-Unsubscribe:' . $this->Mail->encodeHeader($unsubscribeUrl) . "\r\n";
 
-        $headerFields = 'h=From:To:Date:Subject:Baz:List-Unsubscribe';
+        $headerFields = 'h=From:To:Date:Baz:List-Unsubscribe:Subject';
 
         $result = $this->Mail->DKIM_Add($headerLines, $subject, '');
 
