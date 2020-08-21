@@ -747,7 +747,7 @@ class PHPMailer
      *
      * @var string
      */
-    const VERSION = '6.1.6';
+    const VERSION = '6.1.7';
 
     /**
      * Error severity: message only, continue processing.
@@ -899,6 +899,7 @@ class PHPMailer
         switch ($this->Debugoutput) {
             case 'error_log':
                 //Don't output, just log
+                /** @noinspection ForgottenDebugOutputInspection */
                 error_log($str);
                 break;
             case 'html':
@@ -1309,7 +1310,7 @@ class PHPMailer
             $patternselect = static::$validator;
         }
         if (is_callable($patternselect)) {
-            return $patternselect($address);
+            return call_user_func($patternselect, $address);
         }
         //Reject line breaks in addresses; it's valid RFC5322, but not RFC5321
         if (strpos($address, "\n") !== false || strpos($address, "\r") !== false) {
@@ -1350,7 +1351,7 @@ class PHPMailer
                 /*
                  * This is the pattern used in the HTML5 spec for validation of 'email' type form input elements.
                  *
-                 * @see http://www.whatwg.org/specs/web-apps/current-work/#e-mail-state-(type=email)
+                 * @see https://html.spec.whatwg.org/#e-mail-state-(type=email)
                  */
                 return (bool) preg_match(
                     '/^[a-zA-Z0-9.!#$%&\'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}' .
@@ -2002,7 +2003,12 @@ class PHPMailer
             }
             $host = $hostinfo[2];
             $port = $this->Port;
-            if (array_key_exists(3, $hostinfo) && is_numeric($hostinfo[3]) && $hostinfo[3] > 0 && $hostinfo[3] < 65536) {
+            if (
+                array_key_exists(3, $hostinfo) &&
+                is_numeric($hostinfo[3]) &&
+                $hostinfo[3] > 0 &&
+                $hostinfo[3] < 65536
+            ) {
                 $port = (int) $hostinfo[3];
             }
             if ($this->smtp->connect($prefix . $host, $port, $this->Timeout, $options)) {
@@ -2977,7 +2983,6 @@ class PHPMailer
             if ('' === $name) {
                 $name = $filename;
             }
-
             if (!$this->validateEncoding($encoding)) {
                 throw new Exception($this->lang('encoding') . $encoding);
             }
@@ -4117,7 +4122,7 @@ class PHPMailer
     public function html2text($html, $advanced = false)
     {
         if (is_callable($advanced)) {
-            return $advanced($html);
+            return call_user_func($advanced, $html);
         }
 
         return html_entity_decode(

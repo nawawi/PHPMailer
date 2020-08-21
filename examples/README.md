@@ -7,11 +7,11 @@ This folder contains a collection of examples of using [PHPMailer](https://githu
 
 When working on email sending code you'll find yourself worrying about what might happen if all these test emails got sent to your mailing list. The solution is to use a fake mail server, one that acts just like the real thing, but just doesn't actually send anything out. Some offer web interfaces, feedback, logging, the ability to return specific error codes, all things that are useful for testing error handling, authentication etc. Here's a selection of mail testing tools you might like to try:
 
-*   [FakeSMTP](https://github.com/Nilhcem/FakeSMTP), a Java desktop app with the ability to show an SMTP log and save messages to a folder.
-*   [FakeEmail](https://github.com/isotoma/FakeEmail), a Python-based fake mail server with a web interface.
+*   [FakeEmail](https://github.com/tomwardill/FakeEmail), a Python-based fake mail server with a web interface.
 *   [smtp-sink](http://www.postfix.org/smtp-sink.1.html), part of the Postfix mail server, so you may have this installed already. This is used in the Travis-CI configuration to run PHPMailer's unit tests.
-*   [smtp4dev](http://smtp4dev.codeplex.com), a dummy SMTP server for Windows.
+*   [smtp4dev](https://github.com/rnwood/smtp4dev), a dummy SMTP server for Windows and Linux.
 *   [fakesendmail.sh](https://github.com/PHPMailer/PHPMailer/blob/master/test/fakesendmail.sh), part of PHPMailer's test setup, this is a shell script that emulates sendmail for testing 'mail' or 'sendmail' methods in PHPMailer.
+*   [HELO](https://usehelo.com), a very nice (commercial) mail server desktop app from BeyondCode.
 *   [msglint](http://tools.ietf.org/tools/msglint/), not a mail server, the IETF's MIME structure analyser checks the formatting of your messages.
 
 Most of these examples use the `example.com` and `example.net` domains. These domains are reserved by IANA for illustrative purposes, as documented in [RFC 2606](http://tools.ietf.org/html/rfc2606). Don't use made-up domains like 'mydomain.com' or 'somedomain.com' in examples as someone, somewhere, probably owns them!

@@ -22,7 +22,9 @@ if (array_key_exists('userfile', $_FILES)) {
         $mail->Subject = 'PHPMailer file sender';
         $mail->Body = 'My message body';
         // Attach the uploaded file
-        $mail->addAttachment($uploadfile, 'My uploaded file');
+        if (!$mail->addAttachment($uploadfile, 'My uploaded file')) {
+            $msg .= 'Failed to attach file ' . $_FILES['userfile']['name'];
+        }
         if (!$mail->send()) {
             $msg .= 'Mailer Error: '. $mail->ErrorInfo;
         } else {
@@ -46,7 +48,7 @@ if (array_key_exists('userfile', $_FILES)) {
         <input type="submit" value="Send File">
     </form>
 <?php } else {
-    echo $msg;
+    echo htmlspecialchars($msg);
 } ?>
 </body>
 </html>
