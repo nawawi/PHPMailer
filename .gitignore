@@ -6,4 +6,6 @@ build/
 vendor/
 *.pem
 composer.lock
-.php_cs.cache
+.phpcs.xml
+phpcs.xml
+.phpcs-cache

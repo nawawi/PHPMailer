@@ -1,6 +1,13 @@
 # PHPMailer Change Log
 
 ## WIP
+* Switch from PHP CS Fixer to PHP CodeSniffer for coding standards
+* Create class constants for the debug levels in the POP3 class
+* Improve French, Slovenian, and Ukrainian translations
+* Improve file upload examples
+* Resolve PHP 8 line break issues due to a very old PHP bug being fixed
+
+## Version 6.1.8 (October 9th, 2020)
 * Mark `ext-hash` as required in composer.json. This has long been required, but now it will cause an error at install time rather than runtime, making it easier to diagnose
 * Make file upload examples safer
 * Update links to SMTP testing servers
@@ -9,6 +16,10 @@
 * Recover gracefully from errors during keepalive sessions
 * Add AVIF MIME type mapping
 * Prevent duplicate `To` headers in BCC-only messages when using `mail()`
+* Avoid file function problems when attaching files from Windows UNC paths
+* Improve German, Bahasa Indonesian, Filipino translations
+* Add Javascript-based example
+* Increased test coverage
 
 ## Version 6.1.7 (July 14th, 2020)
 * Split SMTP connection into two separate methods

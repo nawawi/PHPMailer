@@ -1,4 +1,5 @@
 <?php
+
 /**
  * PHPMailer - PHP email transport unit tests.
  * PHP version 5.5.
@@ -1218,10 +1219,11 @@ EOT;
         $this->Mail->isHTML(true);
         $this->Mail->CharSet = 'UTF-8';
 
-        if (!$this->Mail->addAttachment(
-            realpath($this->INCLUDE_DIR . '/examples/images/phpmailer_mini.png'),
-            'phpmailer_mini.png'
-        )
+        if (
+            !$this->Mail->addAttachment(
+                realpath($this->INCLUDE_DIR . '/examples/images/phpmailer_mini.png'),
+                'phpmailer_mini.png'
+            )
         ) {
             self::assertTrue(false, $this->Mail->ErrorInfo);
 
@@ -1311,14 +1313,16 @@ EOT;
         $this->Mail->Subject .= ': HTML + unnamed embedded image';
         $this->Mail->isHTML(true);
 
-        if (!$this->Mail->addStringEmbeddedImage(
-            file_get_contents(realpath($this->INCLUDE_DIR . '/examples/images/phpmailer_mini.png')),
-            hash('sha256', 'phpmailer_mini.png') . '@phpmailer.0',
-            '', //Intentionally empty name
-            'base64',
-            '', //Intentionally empty MIME type
-            'inline'
-        )) {
+        if (
+            !$this->Mail->addStringEmbeddedImage(
+                file_get_contents(realpath($this->INCLUDE_DIR . '/examples/images/phpmailer_mini.png')),
+                hash('sha256', 'phpmailer_mini.png') . '@phpmailer.0',
+                '', //Intentionally empty name
+                'base64',
+                '', //Intentionally empty MIME type
+                'inline'
+            )
+        ) {
             self::assertTrue(false, $this->Mail->ErrorInfo);
 
             return;
@@ -1337,20 +1341,22 @@ EOT;
         $this->Mail->Subject .= ': HTML + multiple Attachment';
         $this->Mail->isHTML(true);
 
-        if (!$this->Mail->addAttachment(
-            realpath($this->INCLUDE_DIR . '/examples/images/phpmailer_mini.png'),
-            'phpmailer_mini.png'
-        )
+        if (
+            !$this->Mail->addAttachment(
+                realpath($this->INCLUDE_DIR . '/examples/images/phpmailer_mini.png'),
+                'phpmailer_mini.png'
+            )
         ) {
             self::assertTrue(false, $this->Mail->ErrorInfo);
 
             return;
         }
 
-        if (!$this->Mail->addAttachment(
-            realpath($this->INCLUDE_DIR . '/examples/images/phpmailer.png'),
-            'phpmailer.png'
-        )
+        if (
+            !$this->Mail->addAttachment(
+                realpath($this->INCLUDE_DIR . '/examples/images/phpmailer.png'),
+                'phpmailer.png'
+            )
         ) {
             self::assertTrue(false, $this->Mail->ErrorInfo);
 
@@ -1372,13 +1378,14 @@ EOT;
         $this->Mail->Subject .= ': Embedded Image';
         $this->Mail->isHTML(true);
 
-        if (!$this->Mail->addEmbeddedImage(
-            realpath($this->INCLUDE_DIR . '/examples/images/phpmailer.png'),
-            'my-attach',
-            'phpmailer.png',
-            'base64',
-            'image/png'
-        )
+        if (
+            !$this->Mail->addEmbeddedImage(
+                realpath($this->INCLUDE_DIR . '/examples/images/phpmailer.png'),
+                'my-attach',
+                'phpmailer.png',
+                'base64',
+                'image/png'
+            )
         ) {
             self::assertTrue(false, $this->Mail->ErrorInfo);
 
@@ -1420,13 +1427,14 @@ EOT;
         $this->Mail->Subject .= ': Embedded Image + Attachment';
         $this->Mail->isHTML(true);
 
-        if (!$this->Mail->addEmbeddedImage(
-            realpath($this->INCLUDE_DIR . '/examples/images/phpmailer.png'),
-            'my-attach',
-            'phpmailer.png',
-            'base64',
-            'image/png'
-        )
+        if (
+            !$this->Mail->addEmbeddedImage(
+                realpath($this->INCLUDE_DIR . '/examples/images/phpmailer.png'),
+                'my-attach',
+                'phpmailer.png',
+                'base64',
+                'image/png'
+            )
         ) {
             self::assertTrue(false, $this->Mail->ErrorInfo);
 
@@ -1475,6 +1483,9 @@ EOT;
 
             return;
         }
+
+        //Test using non-existent UNC path
+        self::assertFalse($this->Mail->addAttachment('\\\\nowhere\nothing'));
 
         $this->buildBody();
         self::assertTrue($this->Mail->send(), $this->Mail->ErrorInfo);
@@ -2439,11 +2450,12 @@ EOT;
     /**
      * Check whether setting a bad custom header throws exceptions.
      *
+     * @expectedException PHPMailer\PHPMailer\Exception
+     *
      * @throws Exception
      */
     public function testHeaderException()
     {
-        $this->expectException(Exception::class);
         $mail = new PHPMailer(true);
         $mail->addCustomHeader('SomeHeader', "Some\n Value");
     }
@@ -2802,7 +2814,8 @@ EOT;
         // $this->Mail->smtpClose();
 
         // All these hosts are expected to fail
-        // $this->Mail->Host = 'xyz://bogus:25;tls://[bogus]:25;ssl://localhost:12345;tls://localhost:587;10.10.10.10:54321;localhost:12345;10.10.10.10'. $_REQUEST['mail_host'].' ';
+        // $this->Mail->Host = 'xyz://bogus:25;tls://[bogus]:25;ssl://localhost:12345;
+        // tls://localhost:587;10.10.10.10:54321;localhost:12345;10.10.10.10'. $_REQUEST['mail_host'].' ';
         // self::assertFalse($this->Mail->smtpConnect());
         // $this->Mail->smtpClose();
 
@@ -2833,7 +2846,7 @@ EOT;
         $property->setValue($PHPMailer, true);
         self::assertTrue($PHPMailer->getOAuth());
 
-        $options =[
+        $options = [
             'provider' => 'dummyprovider',
             'userName' => 'dummyusername',
             'clientSecret' => 'dummyclientsecret',
@@ -2971,6 +2984,98 @@ EOT;
             $this->Mail->getSentMIMEMessage(),
             'Wrong ICal method in Content-Type header'
         );
+    }
+
+    /**
+     * @test
+     */
+    public function givenIdnAddress_addAddress_returns_true()
+    {
+        if (file_exists($this->INCLUDE_DIR . '/test/fakefunctions.php')) {
+            include $this->INCLUDE_DIR . '/test/fakefunctions.php';
+            $this->assertTrue($this->Mail->addAddress('test@françois.ch'));
+        }
+    }
+
+    /**
+     * @test
+     */
+    public function givenIdnAddress_addReplyTo_returns_true()
+    {
+        if (file_exists($this->INCLUDE_DIR . '/test/fakefunctions.php')) {
+            include $this->INCLUDE_DIR . '/test/fakefunctions.php';
+            $this->assertTrue($this->Mail->addReplyTo('test@françois.ch'));
+        }
+    }
+
+    /**
+     * @test
+     */
+    public function erroneousAddress_addAddress_returns_false()
+    {
+        $this->assertFalse($this->Mail->addAddress('mehome.com'));
+    }
+
+    /**
+     * @test
+     */
+    public function imapParsedAddressList_parseAddress_returnsAddressArray()
+    {
+        $expected = [
+            [
+                'name' => 'joe',
+                'address' => 'joe@example.com',
+            ],
+            [
+                'name' => 'me',
+                'address' => 'me@home.com',
+            ],
+        ];
+        if (file_exists($this->INCLUDE_DIR . '/test/fakefunctions.php')) {
+            include $this->INCLUDE_DIR . '/test/fakefunctions.php';
+            $addresses = PHPMailer::parseAddresses('joe@example.com, me@home.com');
+            $this->assertEquals(asort($expected), asort($addresses));
+        }
+    }
+
+    /**
+     * @test
+     */
+    public function givenIdnAddress_punyencodeAddress_returnsCorrectCode()
+    {
+        if (file_exists($this->INCLUDE_DIR . '/test/fakefunctions.php')) {
+            include $this->INCLUDE_DIR . '/test/fakefunctions.php';
+            $result = $this->Mail->punyencodeAddress('test@françois.ch');
+            $this->assertEquals('test@xn--franois-bja35c.ch', $result);
+        }
+    }
+
+    /**
+     * @test
+     */
+    public function veryLongWordInMessage_wrapText_returnsWrappedText()
+    {
+        $message = 'Lorem ipsumdolorsitametconsetetursadipscingelitrseddiamnonumy';
+        $expected = 'Lorem' . PHPMailer::getLE() .
+            'ipsumdolorsitametconsetetursadipscingelitrseddiamnonumy' . PHPMailer::getLE();
+        $expectedqp = 'Lorem ipsumdolorsitametconsetetursadipscingelitrs=' .
+            PHPMailer::getLE() . 'eddiamnonumy' . PHPMailer::getLE();
+        $this->assertEquals($this->Mail->wrapText($message, 50, true), $expectedqp);
+        $this->assertEquals($this->Mail->wrapText($message, 50, false), $expected);
+    }
+
+    /**
+     * @test
+     */
+    public function encodedText_utf8CharBoundary_returnsCorrectMaxLength()
+    {
+        $encodedWordWithMultiByteCharFirstByte = 'H=E4tten';
+        $encodedSingleByteCharacter = '=0C';
+        $encodedWordWithMultiByteCharMiddletByte = 'L=C3=B6rem';
+
+        $this->assertEquals(1, $this->Mail->utf8CharBoundary($encodedWordWithMultiByteCharFirstByte, 3));
+        $this->assertEquals(3, $this->Mail->utf8CharBoundary($encodedSingleByteCharacter, 3));
+        $this->assertEquals(1, $this->Mail->utf8CharBoundary($encodedWordWithMultiByteCharMiddletByte, 6));
     }
 }
 /*
