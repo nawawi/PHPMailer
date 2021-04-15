@@ -1,8 +1,17 @@
 # PHPMailer Change Log
 
-## WIP
+## Version 6.4.0 (March 31st, 2021)
+* Revert change that made the `mail()` and sendmail transports set the envelope sender if one isn't explicitly provided, as it causes problems described in <https://github.com/PHPMailer/PHPMailer/issues/2298>
+* Check for mbstring extension before decoding addresss in `parseAddress`
+* Add Serbian Latin translation (`sr_latn`)
+* Enrol PHPMailer in Tidelift
+
+## Version 6.3.0 (February 19th, 2021)
 * Handle early connection errors such as 421 during connection and EHLO states
 * Switch to Github Actions for CI
+* Generate debug output for `mail()`, sendmail, and qmail transports. Enable using the same mechanism as for SMTP: set `SMTPDebug` > 0
+* Make the `mail()` and sendmail transports set the envelope sender the same way as SMTP does, i.e. use whatever `From` is set to, only falling back to the `sendmail_from` php.ini setting if `From` is unset. This avoids errors from the `mail()` function if `Sender` is not set explicitly and php.ini is not configured. This is a minor functionality change, so bumps the minor version number.
+* Extend `parseAddresses` to decode encoded names, improve tests
 
 ## Version 6.2.0
 * PHP 8.0 compatibility, many thanks to @jrf_nl!
