@@ -428,9 +428,11 @@ class PHPMailer
     public $Debugoutput = 'echo';
 
     /**
-     * Whether to keep SMTP connection open after each message.
-     * If this is set to true then to close the connection
-     * requires an explicit call to smtpClose().
+     * Whether to keep the SMTP connection open after each message.
+     * If this is set to true then the connection will remain open after a send,
+     * and closing the connection will require an explicit call to smtpClose().
+     * It's a good idea to use this if you are sending multiple messages as it reduces overhead.
+     * See the mailing list example for how to use it.
      *
      * @var bool
      */
@@ -748,7 +750,7 @@ class PHPMailer
      *
      * @var string
      */
-    const VERSION = '6.4.0';
+    const VERSION = '6.4.1';
 
     /**
      * Error severity: message only, continue processing.
@@ -1811,7 +1813,8 @@ class PHPMailer
      */
     protected static function isPermittedPath($path)
     {
-        return !preg_match('#^[a-z]+://#i', $path);
+        //Matches scheme definition from https://tools.ietf.org/html/rfc3986#section-3.1
+        return !preg_match('#^[a-z][a-z\d+.-]*://#i', $path);
     }
 
     /**
@@ -1823,12 +1826,15 @@ class PHPMailer
      */
     protected static function fileIsAccessible($path)
     {
+        if (!static::isPermittedPath($path)) {
+            return false;
+        }
         $readable = file_exists($path);
         //If not a UNC path (expected to start with \\), check read permission, see #2069
         if (strpos($path, '\\\\') !== 0) {
             $readable = $readable && is_readable($path);
         }
-        return static::isPermittedPath($path) && $readable;
+        return  $readable;
     }
 
     /**
